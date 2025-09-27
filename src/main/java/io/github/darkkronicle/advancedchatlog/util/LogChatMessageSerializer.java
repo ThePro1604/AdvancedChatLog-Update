@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 DarkKronicle
+ * Copyright (C) 2021-2025 DarkKronicle
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -7,6 +7,7 @@
  */
 package io.github.darkkronicle.advancedchatlog.util;
 
+import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import io.github.darkkronicle.advancedchatcore.chat.ChatMessage;
 import io.github.darkkronicle.advancedchatcore.interfaces.IJsonSave;
@@ -23,6 +24,7 @@ import net.minecraft.text.Text;
 @Environment(EnvType.CLIENT)
 public class LogChatMessageSerializer implements IJsonSave<LogChatMessage> {
 
+    private static final Gson GSON = new Gson();
     private DateTimeFormatter formatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
 
     public LogChatMessageSerializer() {}
@@ -52,8 +54,8 @@ public class LogChatMessageSerializer implements IJsonSave<LogChatMessage> {
         LocalDateTime dateTime = LocalDateTime.from(formatter.parse(obj.get("time").getAsString()));
         LocalDate date = dateTime.toLocalDate();
         LocalTime time = dateTime.toLocalTime();
-        Text display = Text.Serializer.fromJson(obj.get("display"));
-        Text original = Text.Serializer.fromJson(obj.get("original"));
+        Text display = GSON.fromJson(obj.get("display"), Text.class);
+        Text original = GSON.fromJson(obj.get("original"), Text.class);
         int stacks = obj.get("stacks").getAsByte();
         ChatMessage message =
                 ChatMessage.builder()
@@ -72,8 +74,8 @@ public class LogChatMessageSerializer implements IJsonSave<LogChatMessage> {
         LocalDateTime dateTime = LocalDateTime.of(message.getDate(), chat.getTime());
         json.addProperty("time", formatter.format(dateTime));
         json.addProperty("stacks", chat.getStacks());
-        json.add("display", Text.Serializer.toJsonTree(transfer(chat.getDisplayText())));
-        json.add("original", Text.Serializer.toJsonTree(transfer(chat.getOriginalText())));
+        json.add("display", GSON.toJsonTree(transfer(chat.getDisplayText())));
+        json.add("original", GSON.toJsonTree(transfer(chat.getOriginalText())));
         return json;
     }
 }
