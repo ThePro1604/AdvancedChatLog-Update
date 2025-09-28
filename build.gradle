@@ -1,17 +1,12 @@
+import javax.net.ssl.HttpsURLConnection
+import java.nio.file.Files
+
 plugins {
-	id 'fabric-loom' version '1.7.2'
+	id 'fabric-loom' version '1.11-SNAPSHOT'
 	id 'maven-publish'
 	id "io.freefair.lombok" version "8.10"
-	id "com.diffplug.spotless" version "5.17.1"
+	id "com.diffplug.spotless" version "7.2.1"
 }
-
-java {
-	toolchain {
-		languageVersion = JavaLanguageVersion.of(21)
-	}
-}
-
-apply from: 'https://gist.githubusercontent.com/EnricoMessall/fb5de26a0ac26840060fd1ef45c32a5f/raw/cba2886a0fc2c95b24fc093684b4e6bfeafbd5ba/publish.gradle'
 
 sourceCompatibility = JavaVersion.VERSION_21
 targetCompatibility = JavaVersion.VERSION_21
@@ -28,11 +23,10 @@ if (file("extra.properties").exists()) {
 
 repositories {
 	mavenCentral()
-	mavenLocal() // only used to build the mod locally
 	maven { url 'https://masa.dy.fi/maven' }
 	maven { url 'https://jitpack.io' }
 	maven {
-		url = uri("https://maven.pkg.github.com/Arematics/AdvancedChatCore")
+		url = uri("https://maven.pkg.github.com/Scrupyy/AdvancedChatCore")
 		credentials {
 			username = project.findProperty("gpr.user") ?: System.getenv("USERNAME")
 			password = project.findProperty("gpr.key") ?: System.getenv("TOKEN")
@@ -41,13 +35,12 @@ repositories {
 }
 
 dependencies {
-	implementation 'org.projectlombok:lombok:1.18.28'
 	minecraft "com.mojang:minecraft:${project.minecraft_version}"
 	mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
 	modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
 	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
-	modImplementation "fi.dy.masa.malilib:malilib-fabric-1.21:${project.malilib_version}"
-	modImplementation "com.arematics:advancedchatcore:${project.advancedchat_version}"
+	modImplementation("com.github.sakura-ryoko:malilib:${project.minecraft_version}-${project.malilib_version}")
+	modImplementation "com.scrupy:advancedchatcore:${project.minecraft_version}-${project.advancedchat_version}"
 }
 
 
@@ -64,32 +57,17 @@ tasks.withType(JavaCompile).configureEach {
 	it.options.release = 21
 }
 
-java {
-	withSourcesJar()
+// Loom will automatically attach sourcesJar to a RemapSourcesJar task and to the "build" task
+// if it is present.
+// If you remove this task, sources will not be generated.
+tasks.register('sourcesJar', Jar) {
+	dependsOn classes
+	archiveClassifier.set('sources')
+	from sourceSets.main.allSource
 }
 
 jar {
 	from "LICENSE.txt"
-}
-
-// configure the maven publication
-publishing {
-	publications {
-		mavenJava(MavenPublication) {
-			// add all the jars that should be included when publishing to maven
-			artifact(remapJar) {
-				builtBy remapJar
-			}
-			artifact(sourcesJar) {
-				builtBy remapSourcesJar
-			}
-		}
-	}
-
-	// See https://docs.gradle.org/current/userguide/publishing_maven.html for information on how to set up publishing.
-	repositories {
-
-	}
 }
 
 spotless {
@@ -107,4 +85,75 @@ spotless {
 		target 'src/*/java/**/*.java'
 		licenseHeaderFile "HEADER.txt"
 	}
+}
+
+// configure the maven publication
+publishing {
+	publications {
+		mavenJava(MavenPublication) {
+			// add all the jars that should be included when publishing to maven
+			artifact(remapJar) {
+				builtBy remapJar
+			}
+			artifact(sourcesJar) {
+				builtBy remapSourcesJar
+			}
+		}
+	}
+
+	// select the repositories you want to publish to
+	repositories {
+		// uncomment to publish to the local maven
+		// mavenLocal()
+	}
+}
+
+task discord {
+	dependsOn build
+
+	doLast {
+		String webhook
+		if (additionalProperties["discord_webhook"] != null) {
+			webhook = additionalProperties["discord_webhook"]
+		} else if (System.getenv("discord_webhook") != null) {
+			webhook = System.getenv("discord_webhook")
+		} else {
+			System.out.println("No webhook found...")
+			return
+		}
+
+		String commitHash = 'git rev-parse --verify --short HEAD'.execute().text.trim()
+
+		File file = remapJar.archiveFile.get().asFile
+		String fileName = "$project.archives_base_name}-${project.mod_version}-${commitHash}.jar"
+		String text = "<:Kronos:799707832399691867> **${project.archives_base_name} v${project.mod_version}-${commitHash} for ${project.minecraft_version}**"
+		URL url = new URL(webhook)
+		HttpsURLConnection connection = (HttpsURLConnection) url.openConnection()
+
+		def cmdLine = "git log --format=%B -n 1"
+		def procCommit = cmdLine.execute()
+		String changeLog = procCommit.in.getText()
+		text = text + "\n" + changeLog
+
+		String boundary = UUID.randomUUID().toString()
+		connection.setRequestMethod("POST")
+		connection.setDoOutput(true)
+		connection.setRequestProperty("Content-Type", "multipart/form-data;boundary=" + boundary)
+		DataOutputStream stream = new DataOutputStream(connection.getOutputStream());
+
+		stream.writeBytes("--" + boundary + "\r\n")
+		stream.writeBytes("Content-Disposition: form-data; name=\"file\"; filename=\"" + fileName + "\"\r\n\r\n")
+		stream.write(Files.readAllBytes(file.toPath()))
+		stream.writeBytes("\r\n")
+		stream.writeBytes("--" + boundary + "\r\n");
+		stream.writeBytes('Content-Disposition: form-data; name="content"\r\n\r\n' + text + '\r\n')
+		stream.writeBytes("--" + boundary + "--\r\n")
+
+		stream.flush()
+		stream.close()
+
+		connection.getInputStream().close()
+		connection.disconnect()
+	}
+
 }

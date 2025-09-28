@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2024 DarkKronicle
+ * Copyright (C) 2021-2025 DarkKronicle
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -8,7 +8,6 @@
 package io.github.darkkronicle.advancedchatlog.util;
 
 import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import io.github.darkkronicle.advancedchatcore.chat.ChatMessage;
 import io.github.darkkronicle.advancedchatcore.interfaces.IJsonSave;
@@ -19,15 +18,14 @@ import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.registry.BuiltinRegistries;
-import net.minecraft.registry.RegistryWrapper;
 import net.minecraft.text.Style;
 import net.minecraft.text.Text;
 
 @Environment(EnvType.CLIENT)
 public class LogChatMessageSerializer implements IJsonSave<LogChatMessage> {
-    private static final Gson GSON = (new GsonBuilder()).disableHtmlEscaping().create();
-    private final DateTimeFormatter formatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
+
+    private static final Gson GSON = new Gson();
+    private DateTimeFormatter formatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
 
     public LogChatMessageSerializer() {}
 
@@ -53,13 +51,11 @@ public class LogChatMessageSerializer implements IJsonSave<LogChatMessage> {
 
     @Override
     public LogChatMessage load(JsonObject obj) {
-        RegistryWrapper.WrapperLookup wrapperLookup = BuiltinRegistries.createWrapperLookup();
         LocalDateTime dateTime = LocalDateTime.from(formatter.parse(obj.get("time").getAsString()));
         LocalDate date = dateTime.toLocalDate();
         LocalTime time = dateTime.toLocalTime();
-
-        Text display = Text.Serialization.fromJson(obj.get("display").getAsString(), wrapperLookup);
-        Text original = Text.Serialization.fromJson(obj.get("original").getAsString(), wrapperLookup);
+        Text display = GSON.fromJson(obj.get("display"), Text.class);
+        Text original = GSON.fromJson(obj.get("original"), Text.class);
         int stacks = obj.get("stacks").getAsByte();
         ChatMessage message =
                 ChatMessage.builder()
@@ -67,7 +63,8 @@ public class LogChatMessageSerializer implements IJsonSave<LogChatMessage> {
                         .displayText(display)
                         .originalText(original)
                         .build();
-        return new LogChatMessage(message, date);
+        LogChatMessage log = new LogChatMessage(message, date);
+        return log;
     }
 
     @Override
@@ -77,8 +74,8 @@ public class LogChatMessageSerializer implements IJsonSave<LogChatMessage> {
         LocalDateTime dateTime = LocalDateTime.of(message.getDate(), chat.getTime());
         json.addProperty("time", formatter.format(dateTime));
         json.addProperty("stacks", chat.getStacks());
-        json.add("display", GSON.toJsonTree(chat.getDisplayText()));
-        json.add("original", GSON.toJsonTree(chat.getOriginalText()));
+        json.add("display", GSON.toJsonTree(transfer(chat.getDisplayText())));
+        json.add("original", GSON.toJsonTree(transfer(chat.getOriginalText())));
         return json;
     }
 }

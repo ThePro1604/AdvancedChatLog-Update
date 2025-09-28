@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 DarkKronicle
+ * Copyright (C) 2021-2025 DarkKronicle
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -140,14 +140,12 @@ public class ChatLogConfigStorage implements IConfigHandler {
 
     public static void loadFromFile() {
         File configFile =
-                FileUtils.getConfigDirectory()
-                        .toPath()
+                FileUtils.getConfigDirectoryAsPath()
                         .resolve("advancedchat")
                         .resolve(CONFIG_FILE_NAME)
                         .toFile();
         File savedFile =
-                FileUtils.getConfigDirectory()
-                        .toPath()
+                FileUtils.getConfigDirectoryAsPath()
                         .resolve("advancedchat")
                         .resolve("saved_lines.json")
                         .toFile();
@@ -182,7 +180,7 @@ public class ChatLogConfigStorage implements IConfigHandler {
     }
 
     public static void saveFromFile() {
-        File dir = FileUtils.getConfigDirectory().toPath().resolve("advancedchat").toFile();
+        File dir = FileUtils.getConfigDirectoryAsPath().resolve("advancedchat").toFile();
 
         if ((dir.exists() && dir.isDirectory()) || dir.mkdirs()) {
             JsonObject root = new JsonObject();
