@@ -1,33 +1,145 @@
+name: Release
+
 on:
   workflow_dispatch:
     inputs:
       previousVersion:
-        description: 'Previous Version (Do not include v prefix, must be same as the last version tag! Example: 1.4.1)'
+        description: 'Previous Version (no v prefix; must equal last tag, e.g. 1.4.1)'
         required: true
       version:
-        description: 'Version (Do not include v prefix! Example: 1.4.2)'
+        description: 'Version (no v prefix; e.g. 1.4.2)'
         required: true
+
 jobs:
-  build:
+  build-and-release:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write   # required for gh release create/upload with GITHUB_TOKEN
+      packages: write
+    env:
+      LAST_TAG: v${{ github.event.inputs.previousVersion }}
+      CURRENT_TAG: v${{ github.event.inputs.version }}
+
     steps:
-      - uses: actions/checkout@main
-      - name: Fetch tags
-        run: git fetch --tags
-      - name: Set up JDK 21
-        uses: actions/setup-java@v1
+      - name: Checkout
+        uses: actions/checkout@v4
         with:
+          fetch-depth: 0  # we need history for changelog
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
           java-version: 21
-      - name: Upload to websites
-        run: ./gradlew publishThirdParty --stacktrace -PlastTag="v${{ github.event.inputs.previousVersion }}" -PcurrentTag="v${{ github.event.inputs.version }}"
-        if: |
-          !contains(github.event.head_commit.message, '[ci skip]') && !contains(github.event.pull_request.title, '[ci skip]')
+
+      - name: Compute release type vars
+        id: rel
+        run: |
+          TAG="${CURRENT_TAG}"
+
+          # default
+          RELEASE_TYPE="stable"
+          PRERELEASE_FLAG=""
+
+          case "$TAG" in
+            *-alpha*) RELEASE_TYPE="alpha"; PRERELEASE_FLAG="--prerelease" ;;
+            *-beta*)  RELEASE_TYPE="beta";  PRERELEASE_FLAG="--prerelease" ;;
+            *-pre*)   RELEASE_TYPE="pre";   PRERELEASE_FLAG="--prerelease" ;;
+            *-rc*)    RELEASE_TYPE="rc";    PRERELEASE_FLAG="--prerelease" ;;
+          esac
+
+          echo "release_type=$RELEASE_TYPE" >> "$GITHUB_OUTPUT"
+          echo "prerelease_flag=$PRERELEASE_FLAG" >> "$GITHUB_OUTPUT"
+
+      - name: Build with Gradle
+        id: build
         env:
-          modrinth_token: ${{ secrets.MODRINTH_TOKEN }}
-          github_token: ${{ secrets.GH_API_KEY }}
-          USERNAME: ${{ secrets.GH_USERNAME }}
-          TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Capture build artifacts
+          GITHUB_ACTOR: ${{ github.actor }}
+          GITHUB_TOKEN: ${{ github.token }}
+          MOD_VERSION: ${{ github.event.inputs.version }}
+        run: |
+          ./gradlew remapJar -PcurrentTag="${CURRENT_TAG}" -PlastTag="${LAST_TAG}" --stacktrace
+          
+          # Pick first JAR and strip leading $PWD/
+          FILE=$(find build/libs -maxdepth 1 -type f -name '*.jar' | head -n1)
+          if [ -z "$FILE" ]; then
+          echo "No JARs found in build/libs" >&2
+          exit 1
+          fi
+          echo "file=$FILE" >> "$GITHUB_OUTPUT"
+
+      - name: Create tag for new version
+        run: |
+          git tag $CURRENT_TAG
+          git push origin $CURRENT_TAG
+
+      - name: Generate changelog (lines starting with '- ')
+        id: changelog
+        run: |
+          set -euo pipefail
+          # safety if tags missing remotely
+          git fetch --tags
+
+          # Extract commit bodies between tags, keep only bullet lines "- ..."
+          # Limit depth similar to your script; adjust if needed
+          MAX_COMMITS=${{ vars.CHANGELOG_MAX_COMMIT_SEARCH || 256 }}
+          git log --max-count="${MAX_COMMITS}" --pretty=format:"%b" "${LAST_TAG}..${CURRENT_TAG}" \
+            | sed 's/^"//; s/"$//' \
+            | awk '/^- / {print}' > CHANGELOG_GH.txt
+
+          # Fallback if empty
+          if [ ! -s CHANGELOG_GH.txt ]; then
+            echo "No Changelog Available" > CHANGELOG_GH.txt
+          fi
+
+          echo "changelog<<EOF" >> "$GITHUB_OUTPUT"
+          cat CHANGELOG_GH.txt >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+
+      # ---- Optional: Publish to Modrinth via their action (recommended) ----
+      # Requires: secrets.MODRINTH_TOKEN and you provide the correct fields below.
+      # Comment out this step if you still want to keep Gradle Minotaur.
+      - name: Publish to Modrinth
+        uses: cloudnode-pro/modrinth-publish@v2.1.3
+        with:
+          token: ${{ secrets.MODRINTH_TOKEN }}
+          project: ${{ vars.MODRINTH_PROJECT_ID }}
+          version: ${{ env.CURRENT_TAG }}
+          changelog: ${{ steps.changelog.outputs.changelog }}
+          game-versions: ${{ vars.MINECRAFT_VERSION }}
+          files: ${{ steps.build.outputs.file }}
+          loaders: |-
+            fabric
+            quilt
+
+      - name: Create or update GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          # Create (or edit if exists)
+          if gh release view "${CURRENT_TAG}" >/dev/null 2>&1; then
+            echo "Release exists; editing title/notes..."
+            gh release edit "${CURRENT_TAG}" \
+              --title "${{ github.event.repository.name }} ${{ env.CURRENT_TAG }} for ${{ vars.MINECRAFT_VERSION }}" \
+              --notes-file CHANGELOG_GH.txt \
+              --target "${GITHUB_SHA}" \
+              ${{ steps.rel.outputs.prerelease_flag }}
+          else
+            echo "Creating release..."
+            gh release create "${CURRENT_TAG}" \
+              --title "${{ github.event.repository.name }} ${{ env.CURRENT_TAG }} for ${{ vars.MINECRAFT_VERSION }}" \
+              --notes-file CHANGELOG_GH.txt \
+              --target "${GITHUB_SHA}" \
+              ${{ steps.rel.outputs.prerelease_flag }}
+          fi
+
+      - name: Upload to GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "${CURRENT_TAG}" "${{ steps.build.outputs.file }}" --clobber
+
+      - name: Upload build artifacts (CI archive)
         uses: actions/upload-artifact@v4
         with:
           name: Artifacts
