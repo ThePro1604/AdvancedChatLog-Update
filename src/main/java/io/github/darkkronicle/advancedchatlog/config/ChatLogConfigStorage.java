@@ -156,8 +156,8 @@ public class ChatLogConfigStorage implements IConfigHandler {
             if (element != null && element.isJsonObject()) {
                 JsonObject root = element.getAsJsonObject();
 
-                ConfigStorage.readOptions(root, General.NAME, (List<SaveableConfig<?>>) General.OPTIONS);
-                ConfigStorage.readOptions(root, Hotkeys.NAME, (List<SaveableConfig<?>>) Hotkeys.OPTIONS);
+                ConfigStorage.readOptions(root, General.NAME, General.OPTIONS);
+                ConfigStorage.readOptions(root, Hotkeys.NAME, Hotkeys.OPTIONS);
 
                 int version = JsonUtils.getIntegerOrDefault(root, "configVersion", 0);
             }
@@ -185,8 +185,8 @@ public class ChatLogConfigStorage implements IConfigHandler {
         if ((dir.exists() && dir.isDirectory()) || dir.mkdirs()) {
             JsonObject root = new JsonObject();
 
-            ConfigStorage.writeOptions(root, General.NAME, (List<SaveableConfig<?>>) General.OPTIONS);
-            ConfigStorage.writeOptions(root, Hotkeys.NAME, (List<SaveableConfig<?>>) Hotkeys.OPTIONS);
+            ConfigStorage.writeOptions(root, General.NAME, General.OPTIONS);
+            ConfigStorage.writeOptions(root, Hotkeys.NAME, Hotkeys.OPTIONS);
 
             root.add("config_version", new JsonPrimitive(CONFIG_VERSION));
 
