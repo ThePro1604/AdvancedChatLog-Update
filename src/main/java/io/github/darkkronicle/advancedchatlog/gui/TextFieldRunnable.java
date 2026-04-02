@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 DarkKronicle
+ * Copyright (C) 2021-2026 DarkKronicle
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -10,6 +10,7 @@ package io.github.darkkronicle.advancedchatlog.gui;
 import fi.dy.masa.malilib.gui.GuiTextFieldGeneric;
 import java.util.function.Consumer;
 import net.minecraft.client.font.TextRenderer;
+import net.minecraft.client.input.KeyInput;
 import org.lwjgl.glfw.GLFW;
 
 public class TextFieldRunnable extends GuiTextFieldGeneric {
@@ -28,11 +29,11 @@ public class TextFieldRunnable extends GuiTextFieldGeneric {
     }
 
     @Override
-    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        if (super.keyPressed(keyCode, scanCode, modifiers)) {
+    public boolean keyPressed(KeyInput input) {
+        if (super.keyPressed(input)) {
             return true;
         }
-        if (keyCode == GLFW.GLFW_KEY_ENTER) {
+        if (input.key() == GLFW.GLFW_KEY_ENTER) {
             onApply.accept(this);
             return true;
         }

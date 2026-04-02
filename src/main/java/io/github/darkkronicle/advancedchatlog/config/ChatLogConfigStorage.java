@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2025 DarkKronicle
+ * Copyright (C) 2021-2026 DarkKronicle
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -25,6 +25,7 @@ import io.github.darkkronicle.advancedchatlog.AdvancedChatLog;
 import io.github.darkkronicle.advancedchatlog.ChatLogData;
 import java.io.File;
 import java.io.OutputStreamWriter;
+import java.util.ArrayList;
 import java.util.List;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
@@ -156,8 +157,8 @@ public class ChatLogConfigStorage implements IConfigHandler {
             if (element != null && element.isJsonObject()) {
                 JsonObject root = element.getAsJsonObject();
 
-                ConfigStorage.readOptions(root, General.NAME, General.OPTIONS);
-                ConfigStorage.readOptions(root, Hotkeys.NAME, Hotkeys.OPTIONS);
+                ConfigStorage.readOptions(root, General.NAME, new ArrayList<>(General.OPTIONS));
+                ConfigStorage.readOptions(root, Hotkeys.NAME, new ArrayList<>(Hotkeys.OPTIONS));
 
                 int version = JsonUtils.getIntegerOrDefault(root, "configVersion", 0);
             }
@@ -185,8 +186,8 @@ public class ChatLogConfigStorage implements IConfigHandler {
         if ((dir.exists() && dir.isDirectory()) || dir.mkdirs()) {
             JsonObject root = new JsonObject();
 
-            ConfigStorage.writeOptions(root, General.NAME, General.OPTIONS);
-            ConfigStorage.writeOptions(root, Hotkeys.NAME, Hotkeys.OPTIONS);
+            ConfigStorage.writeOptions(root, General.NAME, new ArrayList<>(General.OPTIONS));
+            ConfigStorage.writeOptions(root, Hotkeys.NAME, new ArrayList<>(Hotkeys.OPTIONS));
 
             root.add("config_version", new JsonPrimitive(CONFIG_VERSION));
 

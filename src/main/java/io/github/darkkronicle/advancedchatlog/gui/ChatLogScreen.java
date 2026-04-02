@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2025 DarkKronicle
+ * Copyright (C) 2021-2026 DarkKronicle
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -10,13 +10,16 @@ package io.github.darkkronicle.advancedchatlog.gui;
 import fi.dy.masa.malilib.gui.GuiBase;
 import fi.dy.masa.malilib.gui.GuiTextFieldGeneric;
 import fi.dy.masa.malilib.gui.button.ButtonGeneric;
+import fi.dy.masa.malilib.render.GuiContext;
 import fi.dy.masa.malilib.util.InfoUtils;
 import fi.dy.masa.malilib.util.StringUtils;
 import io.github.darkkronicle.advancedchatcore.chat.ChatMessage;
 import io.github.darkkronicle.advancedchatcore.config.ConfigStorage;
 import io.github.darkkronicle.advancedchatcore.gui.ContextMenu;
+import io.github.darkkronicle.advancedchatcore.util.ChatHudHelper;
 import io.github.darkkronicle.advancedchatcore.util.Colors;
 import io.github.darkkronicle.advancedchatcore.util.FindType;
+import io.github.darkkronicle.advancedchatcore.util.ModifierKeyUtil;
 import io.github.darkkronicle.advancedchatcore.util.SearchUtils;
 import io.github.darkkronicle.advancedchatlog.AdvancedChatLog;
 import io.github.darkkronicle.advancedchatlog.ChatLogData;
@@ -25,6 +28,7 @@ import io.github.darkkronicle.advancedchatlog.util.LogChatMessage;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gui.Click;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Style;
@@ -88,7 +92,7 @@ public class ChatLogScreen extends GuiBase {
             if (SearchUtils.isMatch(
                     message.getDisplayText().getString(), search.getText(), findType)) {
                 for (int i = 0; i < message.getLineCount(); i++) {
-                    renderLines.add(0, message.getLines().get(i));
+                    renderLines.addFirst(message.getLines().get(i));
                 }
             }
         } catch (PatternSyntaxException e) {
@@ -140,35 +144,36 @@ public class ChatLogScreen extends GuiBase {
     }
 
     @Override
-    public boolean onMouseClicked(int mouseX, int mouseY, int mouseButton) {
-        if (super.onMouseClicked(mouseX, mouseY, mouseButton)) {
+    public boolean mouseClicked(Click click, boolean doubled) {
+        if (super.mouseClicked(click, doubled)) {
             return true;
         }
-        if (mouseButton == 1) {
-            createContextMenu(mouseX, mouseY);
+        if (click.button() == 1) {
+            createContextMenu((int) click.x(), (int) click.y());
             return true;
         }
-        if (menu != null && menu.onMouseClicked(mouseX, mouseY, mouseButton)) {
+        if (menu != null && menu.onMouseClicked(click, doubled)) {
             return true;
         }
-        if (hasShiftDown()) {
-            relativeScroll(mouseY);
+        if (ModifierKeyUtil.hasShiftDown()) {
+            relativeScroll((int) click.y());
             return true;
         }
-        Style style = getHoverStyle(mouseX, mouseY);
-        if (style != null) {
-            return handleTextClick(style);
+        Style style = getHoverStyle(click.x(), click.y());
+        if (style != null && style.getClickEvent() != null) {
+            net.minecraft.client.gui.screen.Screen.handleClickEvent(style.getClickEvent(), client, this);
+            return true;
         }
         return false;
     }
 
     @Override
-    public boolean mouseDragged(double mouseX, double mouseY, int button, double deltaX, double deltaY) {
-        if (super.mouseDragged(mouseX, mouseY, button, deltaX, deltaY)) {
+    public boolean mouseDragged(Click click, double deltaX, double deltaY) {
+        if (super.mouseDragged(click, deltaX, deltaY)) {
             return true;
         }
-        if (hasShiftDown()) {
-            relativeScroll((int) mouseY);
+        if (ModifierKeyUtil.hasShiftDown()) {
+            relativeScroll((int) click.y());
             return true;
         }
         return false;
@@ -255,8 +260,8 @@ public class ChatLogScreen extends GuiBase {
     }
 
     @Override
-    public boolean onMouseScrolled(int mouseX, int mouseY, double horizontalAmount, double verticalAmount) {
-        if (super.onMouseScrolled(mouseX, mouseY, horizontalAmount, verticalAmount)) {
+    public boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
+        if (super.mouseScrolled(mouseX, mouseY, horizontalAmount, verticalAmount)) {
             return true;
         }
         // Update the scroll variables
@@ -310,7 +315,9 @@ public class ChatLogScreen extends GuiBase {
                 Colors.getInstance().getColorOrWhite("white").color());
         drawContext.drawHoverEvent(textRenderer, getHoverStyle(mouseX, mouseY), mouseX, mouseY);
         if (menu != null) {
-            menu.render(drawContext, mouseX, mouseY, true);
+            // Create GuiContext for malilib components
+            GuiContext guiContext = new GuiContext(client, null, mouseX, mouseY);
+            menu.render(guiContext, mouseX, mouseY, true);
         }
     }
 
@@ -333,7 +340,7 @@ public class ChatLogScreen extends GuiBase {
                 if (message.getMessage().getOwner().getEntry().getDisplayName() != null) {
                     data.getSiblings().add(message.getMessage().getOwner().getEntry().getDisplayName());
                 } else {
-                    data.getSiblings().add(Text.literal(message.getMessage().getOwner().getEntry().getProfile().getName()));
+                    data.getSiblings().add(Text.literal(message.getMessage().getOwner().getEntry().getProfile().name()));
                 }
             }
             if (!data.getString().isBlank()) {
@@ -372,11 +379,34 @@ public class ChatLogScreen extends GuiBase {
             }
             if (y <= mouseY && y + lineHeight >= mouseY) {
                 ChatMessage.AdvancedChatLine line = renderLines.get(i);
-                return textRenderer.getTextHandler().getStyleAt(line.getText(), (int) mouseX);
+                // Use a visitor pattern to extract style from OrderedText at the mouse position
+                int targetX = (int) mouseX;
+                int[] currentX = {0};
+                StyleHolder styleHolder = new StyleHolder();
+
+                line.getText().asOrderedText().accept((index, style, codePoint) -> {
+                    String charString = new String(Character.toChars(codePoint));
+                    int width = textRenderer.getWidth(charString);
+                    if (currentX[0] <= targetX && targetX < currentX[0] + width) {
+                        styleHolder.style = style;
+                        return false; // Stop iteration
+                    }
+                    currentX[0] += width;
+                    return true; // Continue iteration
+                });
+
+                return styleHolder.style;
             }
             y += lineHeight;
         }
         return null;
+    }
+
+    /**
+     * Helper class to hold a style reference from inside a lambda
+     */
+    private static class StyleHolder {
+        Style style = null;
     }
 
     public LogChatMessage getMessage(double mouseX, double mouseY) {

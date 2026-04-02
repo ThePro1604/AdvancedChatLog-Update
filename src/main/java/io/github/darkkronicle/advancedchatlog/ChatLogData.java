@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 DarkKronicle
+ * Copyright (C) 2021-2026 DarkKronicle
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -43,7 +43,7 @@ public class ChatLogData implements IChatMessageProcessor {
 
     private void add(ChatMessage message) {
         LogChatMessage log = new LogChatMessage(message);
-        messages.add(0, log);
+        messages.addFirst(log);
         AdvancedChatLog.logChatMessage(message.getOriginalText());
         Screen screen = MinecraftClient.getInstance().currentScreen;
         if (screen instanceof ChatLogScreen) {
@@ -52,7 +52,7 @@ public class ChatLogData implements IChatMessageProcessor {
     }
 
     private void add(LogChatMessage message) {
-        messages.add(0, message);
+        messages.addFirst(message);
     }
 
     @Override
@@ -67,7 +67,7 @@ public class ChatLogData implements IChatMessageProcessor {
         add(message.shallowClone(width));
         while (messages.size()
                 > ChatLogConfigStorage.General.STORED_LINES.config.getIntegerValue()) {
-            messages.remove(messages.size() - 1);
+            messages.removeLast();
         }
     }
 
@@ -90,7 +90,7 @@ public class ChatLogData implements IChatMessageProcessor {
         LogChatMessageSerializer serializer = new LogChatMessageSerializer();
         List<LogChatMessage> messages = new ArrayList<>();
         for (int i = 0; i < lines && i < ChatLogData.getInstance().getMessages().size(); i++) {
-            messages.add(0, ChatLogData.getInstance().getMessages().get(i));
+            messages.addFirst(ChatLogData.getInstance().getMessages().get(i));
         }
         JsonArray array = new JsonArray();
         for (LogChatMessage message : messages) {

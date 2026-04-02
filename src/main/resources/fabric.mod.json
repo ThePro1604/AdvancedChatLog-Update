@@ -28,9 +28,9 @@
   "depends": {
     "fabricloader": ">=0.17.2",
     "fabric": "*",
-    "minecraft": ">=1.21.8",
-    "malilib": ">=0.25.5",
-    "advancedchatcore": ">=1.5.12-1.21.8"
+    "minecraft": ">=1.21.11",
+    "malilib": ">=0.27.7",
+    "advancedchatcore": ">=1.21.11-2.0"
   },
   "custom": {
     "acmodule": true,
