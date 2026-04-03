@@ -10,13 +10,13 @@ package io.github.darkkronicle.advancedchatlog.gui;
 import fi.dy.masa.malilib.gui.GuiBase;
 import fi.dy.masa.malilib.gui.GuiTextFieldGeneric;
 import fi.dy.masa.malilib.gui.button.ButtonGeneric;
-import fi.dy.masa.malilib.render.GuiContext;
 import fi.dy.masa.malilib.util.InfoUtils;
 import fi.dy.masa.malilib.util.StringUtils;
 import io.github.darkkronicle.advancedchatcore.chat.ChatMessage;
 import io.github.darkkronicle.advancedchatcore.config.ConfigStorage;
 import io.github.darkkronicle.advancedchatcore.gui.ContextMenu;
 import io.github.darkkronicle.advancedchatcore.util.ChatHudHelper;
+import io.github.darkkronicle.advancedchatcore.util.Color;
 import io.github.darkkronicle.advancedchatcore.util.Colors;
 import io.github.darkkronicle.advancedchatcore.util.FindType;
 import io.github.darkkronicle.advancedchatcore.util.ModifierKeyUtil;
@@ -69,6 +69,8 @@ public class ChatLogScreen extends GuiBase {
 
     private ContextMenu menu = null;
     private LogChatMessage message = null;
+    private LinkedHashMap<Text, ContextMenu.ContextConsumer> menuOptions = null;
+    private Text hoveredMenuEntry = null;
 
     private List<ChatMessage.AdvancedChatLine> renderLines;
     private GuiTextFieldGeneric search = null;
@@ -152,8 +154,22 @@ public class ChatLogScreen extends GuiBase {
             createContextMenu((int) click.x(), (int) click.y());
             return true;
         }
-        if (menu != null && menu.onMouseClicked(click, doubled)) {
-            return true;
+        // Handle context menu clicks manually
+        if (menu != null && menuOptions != null && hoveredMenuEntry != null && click.button() == 0) {
+            ContextMenu.ContextConsumer consumer = menuOptions.get(hoveredMenuEntry);
+            if (consumer != null) {
+                consumer.takeAction(menu.getContextX(), menu.getContextY());
+                menu = null;
+                menuOptions = null;
+                hoveredMenuEntry = null;
+                return true;
+            }
+        }
+        // Close menu on any click outside
+        if (menu != null) {
+            menu = null;
+            menuOptions = null;
+            hoveredMenuEntry = null;
         }
         if (ModifierKeyUtil.hasShiftDown()) {
             relativeScroll((int) click.y());
@@ -315,9 +331,56 @@ public class ChatLogScreen extends GuiBase {
                 Colors.getInstance().getColorOrWhite("white").color());
         drawContext.drawHoverEvent(textRenderer, getHoverStyle(mouseX, mouseY), mouseX, mouseY);
         if (menu != null) {
-            // Create GuiContext for malilib components
-            GuiContext guiContext = new GuiContext(client, null, mouseX, mouseY);
-            menu.render(guiContext, mouseX, mouseY, true);
+            // Render context menu directly - replicate ContextMenu's render logic using DrawContext
+            renderContextMenuDirect(drawContext, menu, mouseX, mouseY);
+        }
+    }
+
+    private void renderContextMenuDirect(DrawContext context, ContextMenu menu, int mouseX, int mouseY) {
+        // Get menu properties via reflection since we can't directly access them
+        try {
+            java.lang.reflect.Field bgField = ContextMenu.class.getDeclaredField("background");
+            bgField.setAccessible(true);
+            Color background = (Color) bgField.get(menu);
+
+            java.lang.reflect.Field hoverField = ContextMenu.class.getDeclaredField("hover");
+            hoverField.setAccessible(true);
+            Color hover = (Color) hoverField.get(menu);
+
+            java.lang.reflect.Field optionsField = ContextMenu.class.getDeclaredField("options");
+            optionsField.setAccessible(true);
+            @SuppressWarnings("unchecked")
+            LinkedHashMap<Text, ContextMenu.ContextConsumer> options = (LinkedHashMap<Text, ContextMenu.ContextConsumer>) optionsField.get(menu);
+
+            // Store options for click handling
+            menuOptions = options;
+
+            int x = menu.getX();
+            int y = menu.getY();
+            int width = menu.getWidth();
+            int height = menu.getHeight();
+
+            // Draw background
+            context.fill(x, y, x + width, y + height, background.color());
+
+            int rX = x + 2;
+            int rY = y + 2;
+
+            // Reset hovered entry
+            hoveredMenuEntry = null;
+
+            // Draw each option
+            for (Text option : options.keySet()) {
+                if (mouseX >= x && mouseX <= x + width && mouseY >= rY - 2 && mouseY < rY + textRenderer.fontHeight + 1) {
+                    // Draw hover highlight
+                    context.fill(rX - 2, rY - 2, rX - 2 + width, rY - 2 + textRenderer.fontHeight + 2, hover.color());
+                    hoveredMenuEntry = option;
+                }
+                context.drawTextWithShadow(textRenderer, option, rX, rY, -1);
+                rY += textRenderer.fontHeight + 2;
+            }
+        } catch (Exception e) {
+            AdvancedChatLog.LOGGER.error("[ChatLogScreen] Failed to render context menu: " + e.getMessage());
         }
     }
 
