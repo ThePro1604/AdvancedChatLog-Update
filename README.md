@@ -2,11 +2,11 @@
 
 AdvancedChatLog lets you view and search through the chat history, beyond what Minecraft usually lets you view
 
-Please submit bugs to the [issue tracker](https://github.com/DarkKronicle/AdvancedChatLog/issues).
+Please submit bugs to the [issue tracker](https://github.com/ThePro1604/AdvancedChatLog-Update/issues).
 
 ## Dependencies
 
-[AdvancedChatCore](https://github.com/DarkKronicle/AdvancedChatCore) is required to run the mod.
+[AdvancedChatCore](https://github.com/ThePro1604/AdvancedChatLog-Update) is required to run the mod.
 
 ## Features
 
