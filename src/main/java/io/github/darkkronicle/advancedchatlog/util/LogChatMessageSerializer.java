@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2025 DarkKronicle
+ * Copyright (C) 2021-2026 DarkKronicle
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -18,8 +18,8 @@ import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.text.Style;
-import net.minecraft.text.Text;
+import net.minecraft.network.chat.Style;
+import net.minecraft.network.chat.Component;
 
 @Environment(EnvType.CLIENT)
 public class LogChatMessageSerializer implements IJsonSave<LogChatMessage> {
@@ -39,11 +39,11 @@ public class LogChatMessageSerializer implements IJsonSave<LogChatMessage> {
         return style;
     }
 
-    private Text transfer(Text text) {
+    private Component transfer(Component text) {
         // Using the built in serializer LiteralText is required
-        Text base = Text.empty();
-        for (Text t : text.getSiblings()) {
-            Text newT = Text.literal(t.getString()).fillStyle(cleanStyle(t.getStyle()));
+        Component base = Component.empty();
+        for (Component t : text.getSiblings()) {
+            Component newT = Component.literal(t.getString()).withStyle(cleanStyle(t.getStyle()));
             base.getSiblings().add(newT);
         }
         return base;
@@ -54,8 +54,8 @@ public class LogChatMessageSerializer implements IJsonSave<LogChatMessage> {
         LocalDateTime dateTime = LocalDateTime.from(formatter.parse(obj.get("time").getAsString()));
         LocalDate date = dateTime.toLocalDate();
         LocalTime time = dateTime.toLocalTime();
-        Text display = GSON.fromJson(obj.get("display"), Text.class);
-        Text original = GSON.fromJson(obj.get("original"), Text.class);
+        Component display = GSON.fromJson(obj.get("display"), Component.class);
+        Component original = GSON.fromJson(obj.get("original"), Component.class);
         int stacks = obj.get("stacks").getAsByte();
         ChatMessage message =
                 ChatMessage.builder()

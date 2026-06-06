@@ -23,8 +23,8 @@ import java.util.List;
 import lombok.Getter;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.Screen;
 
 @Environment(EnvType.CLIENT)
 public class ChatLogData implements IChatMessageProcessor {
@@ -45,7 +45,7 @@ public class ChatLogData implements IChatMessageProcessor {
         LogChatMessage log = new LogChatMessage(message);
         messages.addFirst(log);
         AdvancedChatLog.logChatMessage(message.getOriginalText());
-        Screen screen = MinecraftClient.getInstance().currentScreen;
+        Screen screen = Minecraft.getInstance().screen;
         if (screen instanceof ChatLogScreen) {
             ((ChatLogScreen) screen).add(log);
         }
@@ -63,7 +63,7 @@ public class ChatLogData implements IChatMessageProcessor {
         if (type != UpdateType.NEW) {
             return;
         }
-        int width = MinecraftClient.getInstance().getWindow().getScaledWidth() - 20;
+        int width = Minecraft.getInstance().getWindow().getGuiScaledWidth() - 20;
         add(message.shallowClone(width));
         while (messages.size()
                 > ChatLogConfigStorage.General.STORED_LINES.config.getIntegerValue()) {

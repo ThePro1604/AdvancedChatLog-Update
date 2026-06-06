@@ -2,6 +2,7 @@
   "required": true,
   "package": "io.github.darkkronicle.advancedchatlog.mixin",
   "compatibilityLevel": "JAVA_21",
+  "required": false,
   "mixins": [
   ],
   "client": [
