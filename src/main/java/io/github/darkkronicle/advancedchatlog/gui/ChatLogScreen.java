@@ -30,6 +30,7 @@ import net.fabricmc.api.Environment;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.network.chat.Style;
 import net.minecraft.network.chat.Component;
@@ -177,7 +178,7 @@ public class ChatLogScreen extends GuiBase {
         }
         Style style = getHoverStyle(click.x(), click.y());
         if (style != null && style.getClickEvent() != null) {
-            // TODO: Screen.handleClickEvent removed in 26.1
+            handleClickEvent(style.getClickEvent());
             return true;
         }
         return false;
@@ -193,6 +194,25 @@ public class ChatLogScreen extends GuiBase {
             return true;
         }
         return false;
+    }
+
+    private void handleClickEvent(ClickEvent event) {
+        Minecraft mc = Minecraft.getInstance();
+        if (event instanceof ClickEvent.RunCommand cmd) {
+            String command = cmd.command();
+            if (command.startsWith("/")) command = command.substring(1);
+            if (mc.player != null && mc.player.connection != null) {
+                mc.player.connection.sendCommand(command);
+            }
+            GuiBase.openGui(null);
+        } else if (event instanceof ClickEvent.OpenUrl openUrl) {
+            net.minecraft.util.Util.getPlatform().openUri(openUrl.uri());
+        } else if (event instanceof ClickEvent.SuggestCommand suggest) {
+            GuiBase.openGui(null);
+            mc.setScreen(new io.github.darkkronicle.advancedchatcore.chat.AdvancedChatScreen(suggest.command()));
+        } else if (event instanceof ClickEvent.CopyToClipboard copy) {
+            mc.keyboardHandler.setClipboard(copy.value());
+        }
     }
 
     public void relativeScroll(int y) {
@@ -329,7 +349,10 @@ public class ChatLogScreen extends GuiBase {
                 width / 2,
                 height - 28,
                 Colors.getInstance().getColorOrWhite("white").color());
-        // TODO: componentHoverEffect is private in 26.1, mouseX, mouseY);
+        Style hoverStyle = getHoverStyle(mouseX, mouseY);
+        if (hoverStyle != null && hoverStyle.getHoverEvent() != null) {
+            ChatHudHelper.renderHoverTooltip(drawContext, hoverStyle, mouseX, mouseY);
+        }
         if (menu != null) {
             // Render context menu directly - replicate ContextMenu's render logic using GuiGraphicsExtractor
             renderContextMenuDirect(drawContext, menu, mouseX, mouseY);
