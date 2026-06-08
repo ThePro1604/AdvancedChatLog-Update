@@ -1,22 +1,22 @@
 /*
- * Copyright (C) 2021-2026 DarkKronicle
+ * Copyright (C) 2021-2026 thepro1604
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
-package io.github.darkkronicle.advancedchatlog;
+package io.github.thepro1604.advancedchatlog;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
-import io.github.darkkronicle.advancedchatcore.chat.ChatHistory;
-import io.github.darkkronicle.advancedchatcore.chat.ChatMessage;
-import io.github.darkkronicle.advancedchatcore.config.ConfigStorage;
-import io.github.darkkronicle.advancedchatcore.interfaces.IChatMessageProcessor;
-import io.github.darkkronicle.advancedchatlog.config.ChatLogConfigStorage;
-import io.github.darkkronicle.advancedchatlog.gui.ChatLogScreen;
-import io.github.darkkronicle.advancedchatlog.util.LogChatMessage;
-import io.github.darkkronicle.advancedchatlog.util.LogChatMessageSerializer;
+import io.github.thepro1604.advancedchatcore.chat.ChatHistory;
+import io.github.thepro1604.advancedchatcore.chat.ChatMessage;
+import io.github.thepro1604.advancedchatcore.config.ConfigStorage;
+import io.github.thepro1604.advancedchatcore.interfaces.IChatMessageProcessor;
+import io.github.thepro1604.advancedchatlog.config.ChatLogConfigStorage;
+import io.github.thepro1604.advancedchatlog.gui.ChatLogScreen;
+import io.github.thepro1604.advancedchatlog.util.LogChatMessage;
+import io.github.thepro1604.advancedchatlog.util.LogChatMessageSerializer;
 import java.util.ArrayList;
 import java.util.List;
 

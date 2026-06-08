@@ -1,6 +1,6 @@
 {
   "required": true,
-  "package": "io.github.darkkronicle.advancedchatlog.mixin",
+  "package": "io.github.thepro1604.advancedchatlog.mixin",
   "compatibilityLevel": "JAVA_21",
   "required": false,
   "mixins": [

@@ -1,22 +1,22 @@
 /*
- * Copyright (C) 2021 DarkKronicle
+ * Copyright (C) 2021-2026 thepro1604
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
-package io.github.darkkronicle.advancedchatlog;
+package io.github.thepro1604.advancedchatlog;
 
 import fi.dy.masa.malilib.config.ConfigManager;
 import fi.dy.masa.malilib.gui.GuiBase;
 import fi.dy.masa.malilib.interfaces.IInitializationHandler;
-import io.github.darkkronicle.advancedchatcore.chat.ChatHistory;
-import io.github.darkkronicle.advancedchatcore.chat.ChatScreenSectionHolder;
-import io.github.darkkronicle.advancedchatcore.config.gui.GuiConfigHandler;
-import io.github.darkkronicle.advancedchatcore.hotkeys.InputHandler;
-import io.github.darkkronicle.advancedchatlog.config.ChatLogConfigStorage;
-import io.github.darkkronicle.advancedchatlog.gui.ChatLogScreen;
-import io.github.darkkronicle.advancedchatlog.gui.ChatLogScreenSection;
+import io.github.thepro1604.advancedchatcore.chat.ChatHistory;
+import io.github.thepro1604.advancedchatcore.chat.ChatScreenSectionHolder;
+import io.github.thepro1604.advancedchatcore.config.gui.GuiConfigHandler;
+import io.github.thepro1604.advancedchatcore.hotkeys.InputHandler;
+import io.github.thepro1604.advancedchatlog.config.ChatLogConfigStorage;
+import io.github.thepro1604.advancedchatlog.gui.ChatLogScreen;
+import io.github.thepro1604.advancedchatlog.gui.ChatLogScreenSection;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 

@@ -5,12 +5,15 @@
   "name": "AdvancedChatLog",
   "description": "An easy way to view and filter through many chat messages.",
   "authors": [
-    "DarkKronicle",
+    "ThePro1604"
+  ],
+  "contributors": [
+    "DarkKronicle (original author)",
     "EnricoMessall",
     "Scrupy"
   ],
   "contact": {
-    "homepage": "https://arematics.com",
+    "homepage": "https://github.com/ThePro1604",
     "sources": "https://github.com/Arematics/AdvancedChatFilters",
     "issues": "https://github.com/Arematics/AdvancedChatFilters/issues"
   },
@@ -19,7 +22,7 @@
   "environment": "*",
   "entrypoints": {
     "client": [
-      "io.github.darkkronicle.advancedchatlog.AdvancedChatLog"
+      "io.github.thepro1604.advancedchatlog.AdvancedChatLog"
     ]
   },
   "mixins": [

@@ -1,30 +1,30 @@
 /*
- * Copyright (C) 2021-2026 DarkKronicle
+ * Copyright (C) 2021-2026 thepro1604
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
-package io.github.darkkronicle.advancedchatlog.gui;
+package io.github.thepro1604.advancedchatlog.gui;
 
 import fi.dy.masa.malilib.gui.GuiBase;
 import fi.dy.masa.malilib.gui.GuiTextFieldGeneric;
 import fi.dy.masa.malilib.gui.button.ButtonGeneric;
 import fi.dy.masa.malilib.util.InfoUtils;
 import fi.dy.masa.malilib.util.StringUtils;
-import io.github.darkkronicle.advancedchatcore.chat.ChatMessage;
-import io.github.darkkronicle.advancedchatcore.config.ConfigStorage;
-import io.github.darkkronicle.advancedchatcore.gui.ContextMenu;
-import io.github.darkkronicle.advancedchatcore.util.ChatHudHelper;
-import io.github.darkkronicle.advancedchatcore.util.Color;
-import io.github.darkkronicle.advancedchatcore.util.Colors;
-import io.github.darkkronicle.advancedchatcore.util.FindType;
-import io.github.darkkronicle.advancedchatcore.util.ModifierKeyUtil;
-import io.github.darkkronicle.advancedchatcore.util.SearchUtils;
-import io.github.darkkronicle.advancedchatlog.AdvancedChatLog;
-import io.github.darkkronicle.advancedchatlog.ChatLogData;
-import io.github.darkkronicle.advancedchatlog.config.ChatLogConfigStorage;
-import io.github.darkkronicle.advancedchatlog.util.LogChatMessage;
+import io.github.thepro1604.advancedchatcore.chat.ChatMessage;
+import io.github.thepro1604.advancedchatcore.config.ConfigStorage;
+import io.github.thepro1604.advancedchatcore.gui.ContextMenu;
+import io.github.thepro1604.advancedchatcore.util.ChatHudHelper;
+import io.github.thepro1604.advancedchatcore.util.Color;
+import io.github.thepro1604.advancedchatcore.util.Colors;
+import io.github.thepro1604.advancedchatcore.util.FindType;
+import io.github.thepro1604.advancedchatcore.util.ModifierKeyUtil;
+import io.github.thepro1604.advancedchatcore.util.SearchUtils;
+import io.github.thepro1604.advancedchatlog.AdvancedChatLog;
+import io.github.thepro1604.advancedchatlog.ChatLogData;
+import io.github.thepro1604.advancedchatlog.config.ChatLogConfigStorage;
+import io.github.thepro1604.advancedchatlog.util.LogChatMessage;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.Minecraft;
@@ -209,7 +209,7 @@ public class ChatLogScreen extends GuiBase {
             net.minecraft.util.Util.getPlatform().openUri(openUrl.uri());
         } else if (event instanceof ClickEvent.SuggestCommand suggest) {
             GuiBase.openGui(null);
-            mc.setScreen(new io.github.darkkronicle.advancedchatcore.chat.AdvancedChatScreen(suggest.command()));
+            mc.setScreen(new io.github.thepro1604.advancedchatcore.chat.AdvancedChatScreen(suggest.command()));
         } else if (event instanceof ClickEvent.CopyToClipboard copy) {
             mc.keyboardHandler.setClipboard(copy.value());
         }

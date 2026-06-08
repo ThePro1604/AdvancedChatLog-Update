@@ -1,14 +1,14 @@
 /*
- * Copyright (C) 2021-2026 DarkKronicle
+ * Copyright (C) 2021-2026 thepro1604
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
-package io.github.darkkronicle.advancedchatlog;
+package io.github.thepro1604.advancedchatlog;
 
 import fi.dy.masa.malilib.util.FileUtils;
-import io.github.darkkronicle.advancedchatcore.ModuleHandler;
+import io.github.thepro1604.advancedchatcore.ModuleHandler;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;

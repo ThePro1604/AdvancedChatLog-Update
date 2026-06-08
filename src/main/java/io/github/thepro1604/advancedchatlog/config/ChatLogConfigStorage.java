@@ -1,11 +1,11 @@
 /*
- * Copyright (C) 2021-2026 DarkKronicle
+ * Copyright (C) 2021-2026 thepro1604
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
-package io.github.darkkronicle.advancedchatlog.config;
+package io.github.thepro1604.advancedchatlog.config;
 
 import com.google.common.collect.ImmutableList;
 import com.google.gson.JsonElement;
@@ -19,10 +19,10 @@ import fi.dy.masa.malilib.hotkeys.KeybindSettings;
 import fi.dy.masa.malilib.util.FileUtils;
 import fi.dy.masa.malilib.util.JsonUtils;
 import fi.dy.masa.malilib.util.StringUtils;
-import io.github.darkkronicle.advancedchatcore.config.ConfigStorage;
-import io.github.darkkronicle.advancedchatcore.config.SaveableConfig;
-import io.github.darkkronicle.advancedchatlog.AdvancedChatLog;
-import io.github.darkkronicle.advancedchatlog.ChatLogData;
+import io.github.thepro1604.advancedchatcore.config.ConfigStorage;
+import io.github.thepro1604.advancedchatcore.config.SaveableConfig;
+import io.github.thepro1604.advancedchatlog.AdvancedChatLog;
+import io.github.thepro1604.advancedchatlog.ChatLogData;
 import java.io.File;
 import java.io.OutputStreamWriter;
 import java.util.ArrayList;
