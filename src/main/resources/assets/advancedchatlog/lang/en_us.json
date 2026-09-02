@@ -26,6 +26,16 @@
   "advancedchat.config.findtype.regex": "§bRegEx",
   "advancedchat.config.findtype.all": "§dAll",
 
+  "advancedchatlog.search.multi.off": "§8Off",
+  "advancedchatlog.search.multi.any": "§aAny",
+  "advancedchatlog.search.multi.all": "§cAll",
+  "advancedchatlog.search.multi.hover.title": "§eMulti-word Search",
+  "advancedchatlog.search.multi.hover.usage": "§7Separate terms with a comma, e.g. §f\"cake, cookie\"",
+  "advancedchatlog.search.multi.hover.off": "§8Off§7: search box is one exact phrase, commas included",
+  "advancedchatlog.search.multi.hover.any": "§aAny§7: show messages matching §aany§7 of the terms",
+  "advancedchatlog.search.multi.hover.all": "§cAll§7: show messages matching §call§7 of the terms",
+  "advancedchatlog.search.multi.hover.regexnote": "§7Only splits terms in §6Literal§7/§eUpper-Lower§7 modes",
+
   "advancedchatlog.config.tab.hotkeysgeneral": "Chat Log",
   "advancedchatlog.config.hotkeys.openlog": "Open Log",
 

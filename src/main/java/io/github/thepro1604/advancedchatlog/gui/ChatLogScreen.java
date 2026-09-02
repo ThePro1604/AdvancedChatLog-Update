@@ -77,7 +77,40 @@ public class ChatLogScreen extends GuiBase {
     private GuiTextFieldGeneric search = null;
     private TextFieldRunnable send = null;
     private ButtonGeneric searchType = null;
+    private ButtonGeneric matchMode = null;
     private FindType findType = FindType.LITERAL;
+
+    /**
+     * Controls whether the search box contents get split into multiple comma-separated terms, and
+     * if so, how those terms are combined. Defaults to {@link MultiSearchMode#OFF} so a search
+     * containing a literal comma behaves exactly as it did before this feature existed.
+     */
+    private MultiSearchMode multiSearchMode = MultiSearchMode.OFF;
+
+    /** The different ways the search box contents can be interpreted. */
+    private enum MultiSearchMode {
+        /** The whole search box is treated as a single term; commas are matched literally. */
+        OFF,
+        /** The search box is split on commas; a message matches if it matches any one term. */
+        ANY,
+        /** The search box is split on commas; a message must match every term. */
+        ALL;
+
+        String getDisplayName() {
+            return StringUtils.translate("advancedchatlog.search.multi." + name().toLowerCase());
+        }
+
+        MultiSearchMode cycle(boolean forward) {
+            MultiSearchMode[] values = values();
+            int id = this.ordinal() + (forward ? 1 : -1);
+            if (id >= values.length) {
+                id = 0;
+            } else if (id < 0) {
+                id = values.length - 1;
+            }
+            return values[id];
+        }
+    }
 
     public ChatLogScreen() {
         super();
@@ -92,8 +125,7 @@ public class ChatLogScreen extends GuiBase {
 
     public void add(ChatMessage message) {
         try {
-            if (SearchUtils.isMatch(
-                    message.getDisplayText().getString(), search.getValue(), findType)) {
+            if (matchesSearch(message.getDisplayText().getString(), search.getValue())) {
                 for (int i = 0; i < message.getLineCount(); i++) {
                     renderLines.addFirst(message.getLines().get(i));
                 }
@@ -101,6 +133,64 @@ public class ChatLogScreen extends GuiBase {
         } catch (PatternSyntaxException e) {
             // Already handled earlier.
         }
+    }
+
+    /**
+     * Splits the raw search box contents into individual search terms.
+     *
+     * <p>Terms are separated by commas so users can search for e.g. "cake, cookie" at once, but
+     * only when {@link #multiSearchMode} is not {@link MultiSearchMode#OFF} - otherwise the whole
+     * search box is kept as-is so a literal comma in the search can still be matched. Splitting is
+     * also skipped for {@link FindType#REGEX} and {@link FindType#CUSTOM} since a comma can be
+     * meaningful syntax there (e.g. the {@code {1,3}} quantifier).
+     */
+    private List<String> splitSearchTerms(String contents) {
+        if (contents.isEmpty()) {
+            return List.of();
+        }
+        if (multiSearchMode == MultiSearchMode.OFF
+                || findType == FindType.REGEX
+                || findType == FindType.CUSTOM) {
+            return List.of(contents);
+        }
+        List<String> terms = new ArrayList<>();
+        for (String part : contents.split(",")) {
+            String trimmed = part.trim();
+            if (!trimmed.isEmpty()) {
+                terms.add(trimmed);
+            }
+        }
+        if (terms.isEmpty()) {
+            terms.add(contents.trim());
+        }
+        return terms;
+    }
+
+    /**
+     * Checks whether {@code text} matches the search box contents, combining multiple
+     * comma-separated terms with either AND ({@link MultiSearchMode#ALL}) or OR
+     * ({@link MultiSearchMode#ANY}) semantics. With {@link MultiSearchMode#OFF} there is only ever
+     * a single term, so the AND/OR distinction has no effect.
+     */
+    private boolean matchesSearch(String text, String contents) {
+        List<String> terms = splitSearchTerms(contents);
+        if (terms.isEmpty()) {
+            return true;
+        }
+        if (multiSearchMode == MultiSearchMode.ALL) {
+            for (String term : terms) {
+                if (!SearchUtils.isMatch(text, term, findType)) {
+                    return false;
+                }
+            }
+            return true;
+        }
+        for (String term : terms) {
+            if (SearchUtils.isMatch(text, term, findType)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     @Override
@@ -127,6 +217,25 @@ public class ChatLogScreen extends GuiBase {
                         findType = findType.cycle(false);
                     }
                     button.setDisplayString(findType.getDisplayName());
+                    searchText(search.getValue());
+                }));
+        matchMode = new ButtonGeneric(width / 2 - 142, 6, 70, false, multiSearchMode.getDisplayName());
+        matchMode.setHoverStrings(
+                StringUtils.translate("advancedchatlog.search.multi.hover.title"),
+                StringUtils.translate("advancedchatlog.search.multi.hover.usage"),
+                StringUtils.translate("advancedchatlog.search.multi.hover.off"),
+                StringUtils.translate("advancedchatlog.search.multi.hover.any"),
+                StringUtils.translate("advancedchatlog.search.multi.hover.all"),
+                StringUtils.translate("advancedchatlog.search.multi.hover.regexnote"));
+        addButton(
+                matchMode,
+                ((button, mouseButton) -> {
+                    if (mouseButton == 0) {
+                        multiSearchMode = multiSearchMode.cycle(true);
+                    } else {
+                        multiSearchMode = multiSearchMode.cycle(false);
+                    }
+                    button.setDisplayString(multiSearchMode.getDisplayName());
                     searchText(search.getValue());
                 }));
         send = new TextFieldRunnable(
@@ -236,7 +345,7 @@ public class ChatLogScreen extends GuiBase {
         for (LogChatMessage l : ChatLogData.getInstance().getMessages()) {
             ChatMessage m = l.getMessage();
             try {
-                if (SearchUtils.isMatch(m.getDisplayText().getString(), contents, findType)) {
+                if (matchesSearch(m.getDisplayText().getString(), contents)) {
                     sorted.add(l);
                 }
             } catch (PatternSyntaxException e) {
