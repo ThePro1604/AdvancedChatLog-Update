@@ -209,7 +209,7 @@ public class ChatLogScreen extends GuiBase {
             net.minecraft.util.Util.getPlatform().openUri(openUrl.uri());
         } else if (event instanceof ClickEvent.SuggestCommand suggest) {
             GuiBase.openGui(null);
-            mc.setScreen(new io.github.thepro1604.advancedchatcore.chat.AdvancedChatScreen(suggest.command()));
+            mc.setScreenAndShow(new io.github.thepro1604.advancedchatcore.chat.AdvancedChatScreen(suggest.command()));
         } else if (event instanceof ClickEvent.CopyToClipboard copy) {
             mc.keyboardHandler.setClipboard(copy.value());
         }
