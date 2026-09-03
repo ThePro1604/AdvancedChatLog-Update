@@ -21,6 +21,8 @@
   "advancedchatlog.config.general.info.scroll_multiplier": "The strength of the scroll",
   "advancedchatlog.config.general.clean_save": "Clean Saved Lines",
   "advancedchatlog.config.general.info.clean_save": "Removes some styling information for the saved text such as click events and hover events.\nThis makes the file footprint less.",
+  "advancedchatlog.config.general.default_find_type": "Default Search Type",
+  "advancedchatlog.config.general.info.default_find_type": "The search type that is selected by default when the §aChat Log§r is opened.",
   "advancedchat.config.findtype.literal": "§6Literal",
   "advancedchat.config.findtype.upperlower": "§eUpper-Lower",
   "advancedchat.config.findtype.regex": "§bRegEx",

@@ -8,8 +8,10 @@
 package io.github.thepro1604.advancedchatlog.gui;
 
 import fi.dy.masa.malilib.gui.GuiBase;
+import fi.dy.masa.malilib.gui.GuiScrollBar;
 import fi.dy.masa.malilib.gui.GuiTextFieldGeneric;
 import fi.dy.masa.malilib.gui.button.ButtonGeneric;
+import fi.dy.masa.malilib.render.GuiContext;
 import fi.dy.masa.malilib.util.InfoUtils;
 import fi.dy.masa.malilib.util.StringUtils;
 import io.github.thepro1604.advancedchatcore.chat.ChatMessage;
@@ -19,7 +21,6 @@ import io.github.thepro1604.advancedchatcore.util.ChatHudHelper;
 import io.github.thepro1604.advancedchatcore.util.Color;
 import io.github.thepro1604.advancedchatcore.util.Colors;
 import io.github.thepro1604.advancedchatcore.util.FindType;
-import io.github.thepro1604.advancedchatcore.util.ModifierKeyUtil;
 import io.github.thepro1604.advancedchatcore.util.SearchUtils;
 import io.github.thepro1604.advancedchatlog.AdvancedChatLog;
 import io.github.thepro1604.advancedchatlog.ChatLogData;
@@ -49,24 +50,11 @@ import java.util.regex.PatternSyntaxException;
 public class ChatLogScreen extends GuiBase {
 
     /**
-     * The px where the scroll will start
+     * Tracks the scroll position in pixels, the same way malilib's own scrollable list widgets
+     * (e.g. {@code WidgetListBase}, used by the settings menu) do. Its value is clamped to
+     * {@code [0, maxValue]} internally, and dragging/scrolling both go through it.
      */
-    private double scrollStart = 0;
-
-    /**
-     * The px where the scroll will end
-     */
-    private double scrollEnd = 0;
-
-    /**
-     * The current value of scroll. This should be used to grab scroll value.
-     */
-    private double currentScroll = 0;
-
-    /**
-     * Last time scroll was updated. Used for smooth scroll.
-     */
-    private long lastScrollTime = 0;
+    private final GuiScrollBar scrollBar = new GuiScrollBar();
 
     private ContextMenu menu = null;
     private LogChatMessage message = null;
@@ -78,7 +66,8 @@ public class ChatLogScreen extends GuiBase {
     private TextFieldRunnable send = null;
     private ButtonGeneric searchType = null;
     private ButtonGeneric matchMode = null;
-    private FindType findType = FindType.LITERAL;
+    private FindType findType =
+            (FindType) ChatLogConfigStorage.General.DEFAULT_FIND_TYPE.config.getOptionListValue();
 
     /**
      * Controls whether the search box contents get split into multiple comma-separated terms, and
@@ -118,8 +107,10 @@ public class ChatLogScreen extends GuiBase {
 
     public void add(LogChatMessage message) {
         add(message.getMessage());
-        if (currentScroll > 0) {
-            currentScroll += message.getMessage().getLineCount() * (Minecraft.getInstance().font.lineHeight + 2);
+        if (scrollBar.getValue() > 0) {
+            // Keep whatever the user is currently looking at in view instead of letting it shift
+            // when a new message pushes everything else back by one.
+            scrollBar.offsetValue(message.getMessage().getLineCount() * (Minecraft.getInstance().font.lineHeight + 2));
         }
     }
 
@@ -281,10 +272,6 @@ public class ChatLogScreen extends GuiBase {
             menuOptions = null;
             hoveredMenuEntry = null;
         }
-        if (ModifierKeyUtil.hasShiftDown()) {
-            relativeScroll((int) click.y());
-            return true;
-        }
         Style style = getHoverStyle(click.x(), click.y());
         if (style != null && style.getClickEvent() != null) {
             handleClickEvent(style.getClickEvent());
@@ -294,15 +281,23 @@ public class ChatLogScreen extends GuiBase {
     }
 
     @Override
-    public boolean mouseDragged(MouseButtonEvent click, double deltaX, double deltaY) {
-        if (super.mouseDragged(click, deltaX, deltaY)) {
+    public boolean onMouseClicked(MouseButtonEvent click, boolean doubled) {
+        // Same pattern the settings menu's scroll list uses: a click that lands on the scrollbar
+        // thumb starts a drag. GuiBase.mouseClicked already calls this hook virtually via the
+        // super.mouseClicked(...) call at the top of mouseClicked(...) above.
+        if (click.button() == 0 && scrollBar.wasMouseOver()) {
+            scrollBar.setIsDragging(true);
             return true;
         }
-        if (ModifierKeyUtil.hasShiftDown()) {
-            relativeScroll((int) click.y());
-            return true;
+        return super.onMouseClicked(click, doubled);
+    }
+
+    @Override
+    public boolean onMouseReleased(MouseButtonEvent click) {
+        if (click.button() == 0) {
+            scrollBar.setIsDragging(false);
         }
-        return false;
+        return super.onMouseReleased(click);
     }
 
     private void handleClickEvent(ClickEvent event) {
@@ -323,18 +318,6 @@ public class ChatLogScreen extends GuiBase {
             mc.keyboardHandler.setClipboard(copy.value());
         }
     }
-
-    public void relativeScroll(int y) {
-        // Scroll click
-        int height = Minecraft.getInstance().getWindow().getGuiScaledHeight() - 100;
-        y -= 40;
-        float percent = 1 - Math.max(0, Math.min((float) y / height, 1));
-        int newPix = (int) (percent * (renderLines.size() * (font.lineHeight + 2)));
-        scrollEnd = newPix;
-        scrollStart = newPix;
-        lastScrollTime = System.currentTimeMillis();
-    }
-
 
     private void searchText(String contents) {
         if (contents.isEmpty()) {
@@ -380,57 +363,38 @@ public class ChatLogScreen extends GuiBase {
         }
     }
 
-    private void updateScroll() {
-        long time = System.currentTimeMillis();
-        // Starting scroll + percent completed
-        currentScroll = scrollStart + (
-                (scrollEnd - scrollStart) * (1 - ((ConfigStorage.Easing) ChatLogConfigStorage.General.SCROLL_TYPE.config.getOptionListValue()).apply(
-                        1 - ((float) time - lastScrollTime) / ChatLogConfigStorage.General.SCROLL_TIME.config.getIntegerValue()
-                ))
-        );
-        int fontHeight = (font.lineHeight + 2);
-        if (currentScroll < 0) {
-            // Make sure we can still see at least one line
-            currentScroll = 0;
-            scrollEnd = 0;
-            lastScrollTime = 0;
-        }
-        int maxY = fontHeight * (renderLines.size() - 1);
-        if (currentScroll >= maxY) {
-            // Make sure it stops at the top
-            currentScroll = maxY;
-            scrollEnd = maxY;
-            lastScrollTime = 0;
-        }
-    }
-
     @Override
-    public boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
-        if (super.mouseScrolled(mouseX, mouseY, horizontalAmount, verticalAmount)) {
+    public boolean onMouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
+        // Plug into GuiBase's own onMouseScrolled hook instead of overriding the top-level
+        // mouseScrolled(...) - this is the same extension point malilib's own scrollable list
+        // widgets (e.g. the settings menu, via GuiListBase/WidgetListBase) use, so it goes through
+        // GuiBase's delta accumulation/rounding and its buttons/text-field consumption check first.
+        if (super.onMouseScrolled(mouseX, mouseY, horizontalAmount, verticalAmount)) {
             return true;
         }
-        // Update the scroll variables
-        scrollEnd = currentScroll + verticalAmount * 10 * ChatLogConfigStorage.General.SCROLL_MULTIPLIER.config.getDoubleValue();
-        scrollStart = currentScroll;
-        lastScrollTime = System.currentTimeMillis();
+        scrollBar.offsetValue((int) Math.round(
+                verticalAmount * 10 * ChatLogConfigStorage.General.SCROLL_MULTIPLIER.config.getDoubleValue()));
         return true;
     }
 
     @Override
     public void extractRenderState(GuiGraphicsExtractor drawContext, int mouseX, int mouseY, float partialTicks) {
         super.extractRenderState(drawContext, mouseX, mouseY, partialTicks);
-        updateScroll();
         int height = Minecraft.getInstance().getWindow().getGuiScaledHeight();
         int width = Minecraft.getInstance().getWindow().getGuiScaledWidth();
         int lineHeight = font.lineHeight + 2;
         // 60 px top, 40 px bottom
         int lines = (int) Math.ceil((float) (height - 70 - lineHeight) / (lineHeight));
 
+        int maxScroll = lineHeight * (renderLines.size() - 1);
+        scrollBar.setMaxValue(maxScroll);
+        int currentScroll = scrollBar.getValue();
+
         // Current line scrolled
-        int scrollLine = (int) Math.floor((float) currentScroll / (lineHeight));
+        int scrollLine = currentScroll / lineHeight;
 
         // Offset y for scrolling. Used for partially obstructed lines.
-        int y = -1 * ((int) currentScroll % lineHeight);
+        int y = -1 * (currentScroll % lineHeight);
 
         // Scissor to keep boundaries for the half scroll
         double scale = Minecraft.getInstance().getWindow().getGuiScale();
@@ -458,6 +422,12 @@ public class ChatLogScreen extends GuiBase {
                 width / 2,
                 height - 28,
                 Colors.getInstance().getColorOrWhite("white").color());
+
+        // Render the same scrollbar widget the settings menu uses, along the right edge of the
+        // visible chat area.
+        scrollBar.render(GuiContext.fromGuiGraphics(drawContext), mouseX, mouseY, partialTicks,
+                width - 9, 40, 8, height - 70, maxScroll);
+
         Style hoverStyle = getHoverStyle(mouseX, mouseY);
         if (hoverStyle != null && hoverStyle.getHoverEvent() != null) {
             ChatHudHelper.renderHoverTooltip(drawContext, hoverStyle, mouseX, mouseY);
@@ -559,10 +529,11 @@ public class ChatLogScreen extends GuiBase {
         int lines = (int) Math.ceil((float) (height - 70 - lineHeight) / (lineHeight));
 
         // Current line scrolled
-        int scrollLine = (int) Math.floor((float) currentScroll / (lineHeight));
+        int currentScroll = scrollBar.getValue();
+        int scrollLine = currentScroll / lineHeight;
 
         // Offset y for scrolling. Used for partially obstructed lines.
-        int y = -1 * ((int) currentScroll % lineHeight);
+        int y = -1 * (currentScroll % lineHeight);
         int height = Minecraft.getInstance().getWindow().getGuiScaledHeight();
         // Change the perspective of mouseY from where the text started.
         mouseY = height - mouseY - 40;
@@ -609,10 +580,11 @@ public class ChatLogScreen extends GuiBase {
         int lines = (int) Math.ceil((float) (height - 70 - lineHeight) / (lineHeight));
 
         // Current line scrolled
-        int scrollLine = (int) Math.floor((float) currentScroll / (lineHeight));
+        int currentScroll = scrollBar.getValue();
+        int scrollLine = currentScroll / lineHeight;
 
         // Offset y for scrolling. Used for partially obstructed lines.
-        int y = -1 * ((int) currentScroll % lineHeight);
+        int y = -1 * (currentScroll % lineHeight);
         int height = Minecraft.getInstance().getWindow().getGuiScaledHeight();
         // Change the perspective of mouseY from where the text started.
         mouseY = height - mouseY - 40;

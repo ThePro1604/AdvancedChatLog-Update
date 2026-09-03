@@ -21,6 +21,7 @@ import fi.dy.masa.malilib.util.data.json.JsonUtils;
 import fi.dy.masa.malilib.util.StringUtils;
 import io.github.thepro1604.advancedchatcore.config.ConfigStorage;
 import io.github.thepro1604.advancedchatcore.config.SaveableConfig;
+import io.github.thepro1604.advancedchatcore.util.FindType;
 import io.github.thepro1604.advancedchatlog.AdvancedChatLog;
 import io.github.thepro1604.advancedchatlog.ChatLogData;
 import java.io.File;
@@ -116,8 +117,16 @@ public class ChatLogConfigStorage implements IConfigHandler {
                         new ConfigBoolean(
                                 translate("clean_save"), false, translate("info.clean_save")));
 
+        public static final SaveableConfig<ConfigOptionList> DEFAULT_FIND_TYPE =
+                SaveableConfig.fromConfig(
+                        "default_find_type",
+                        new ConfigOptionList(
+                                translate("default_find_type"),
+                                FindType.LITERAL,
+                                translate("info.default_find_type")));
+
         public static final ImmutableList<SaveableConfig<? extends IConfigBase>> OPTIONS =
-                ImmutableList.of(STORED_LINES, ONLY_MANUAL_CLEAR, SAVED_LINES, RELOAD_LINES, CLEAN_SAVE, SCROLL_TIME, SCROLL_TYPE, SCROLL_MULTIPLIER);
+                ImmutableList.of(STORED_LINES, ONLY_MANUAL_CLEAR, SAVED_LINES, RELOAD_LINES, CLEAN_SAVE, SCROLL_TIME, SCROLL_TYPE, SCROLL_MULTIPLIER, DEFAULT_FIND_TYPE);
     }
 
     public static class Hotkeys {
