@@ -106,11 +106,19 @@ public class ChatLogScreen extends GuiBase {
     }
 
     public void add(LogChatMessage message) {
+        // scrollBar's value is the distance from the OLDEST loaded message, so being caught up to
+        // the live end means the value is already at (or past) the current max.
+        boolean wasAtLiveEnd = scrollBar.getValue() >= scrollBar.getMaxValue();
         add(message.getMessage());
-        if (scrollBar.getValue() > 0) {
-            // Keep whatever the user is currently looking at in view instead of letting it shift
-            // when a new message pushes everything else back by one.
-            scrollBar.offsetValue(message.getMessage().getLineCount() * (Minecraft.getInstance().font.lineHeight + 2));
+        if (wasAtLiveEnd) {
+            // Follow the live end so a message arriving while caught up keeps us caught up.
+            // If the user has scrolled back into history instead, leave the value untouched -
+            // extractRenderState's setMaxValue(...) call next frame grows the max to match, which
+            // keeps the same messages in view as everything else shifts back by one.
+            int lineHeight = Minecraft.getInstance().font.lineHeight + 2;
+            int maxScroll = lineHeight * (renderLines.size() - 1);
+            scrollBar.setMaxValue(maxScroll);
+            scrollBar.setValue(maxScroll);
         }
     }
 
@@ -188,6 +196,11 @@ public class ChatLogScreen extends GuiBase {
     public void initGui() {
         super.initGui();
         setLines(ChatLogData.getInstance().getMessages());
+        // Start at the live end (newest messages), where the resting scroll position should be.
+        // GuiScrollBar otherwise defaults its value - and therefore the thumb - to 0/top.
+        int initialMaxScroll = (font.lineHeight + 2) * (renderLines.size() - 1);
+        scrollBar.setMaxValue(initialMaxScroll);
+        scrollBar.setValue(initialMaxScroll);
         int width = Minecraft.getInstance().getWindow().getGuiScaledWidth();
         int height = Minecraft.getInstance().getWindow().getGuiScaledHeight();
         search = new GuiTextFieldGeneric((width / 2) - 70, 6, 141, 20, font);
@@ -372,8 +385,12 @@ public class ChatLogScreen extends GuiBase {
         if (super.onMouseScrolled(mouseX, mouseY, horizontalAmount, verticalAmount)) {
             return true;
         }
+        // scrollBar's value is the distance from the OLDEST message (0 = oldest, max = live/newest
+        // - see extractRenderState), matching the thumb resting at the bottom when caught up.
+        // Scrolling up should still move toward older messages, i.e. a LOWER value, so this is the
+        // negative of vanilla ChatComponent#scrollChat's own relationship to verticalAmount.
         scrollBar.offsetValue((int) Math.round(
-                verticalAmount * 10 * ChatLogConfigStorage.General.SCROLL_MULTIPLIER.config.getDoubleValue()));
+                -verticalAmount * 10 * ChatLogConfigStorage.General.SCROLL_MULTIPLIER.config.getDoubleValue()));
         return true;
     }
 
@@ -388,7 +405,10 @@ public class ChatLogScreen extends GuiBase {
 
         int maxScroll = lineHeight * (renderLines.size() - 1);
         scrollBar.setMaxValue(maxScroll);
-        int currentScroll = scrollBar.getValue();
+        // scrollBar's value is distance-from-oldest; the rendering below is written in terms of
+        // distance-from-live (0 = newest, at the bottom), matching how it worked before the
+        // scrollbar rewrite and vanilla's own ChatComponent#chatScrollbarPos.
+        int currentScroll = maxScroll - scrollBar.getValue();
 
         // Current line scrolled
         int scrollLine = currentScroll / lineHeight;
@@ -528,8 +548,9 @@ public class ChatLogScreen extends GuiBase {
         int lineHeight = font.lineHeight + 2;
         int lines = (int) Math.ceil((float) (height - 70 - lineHeight) / (lineHeight));
 
-        // Current line scrolled
-        int currentScroll = scrollBar.getValue();
+        // Current line scrolled. See extractRenderState for why this is maxScroll - getValue().
+        int maxScroll = lineHeight * (renderLines.size() - 1);
+        int currentScroll = maxScroll - scrollBar.getValue();
         int scrollLine = currentScroll / lineHeight;
 
         // Offset y for scrolling. Used for partially obstructed lines.
@@ -579,8 +600,9 @@ public class ChatLogScreen extends GuiBase {
         int lineHeight = font.lineHeight + 2;
         int lines = (int) Math.ceil((float) (height - 70 - lineHeight) / (lineHeight));
 
-        // Current line scrolled
-        int currentScroll = scrollBar.getValue();
+        // Current line scrolled. See extractRenderState for why this is maxScroll - getValue().
+        int maxScroll = lineHeight * (renderLines.size() - 1);
+        int currentScroll = maxScroll - scrollBar.getValue();
         int scrollLine = currentScroll / lineHeight;
 
         // Offset y for scrolling. Used for partially obstructed lines.
