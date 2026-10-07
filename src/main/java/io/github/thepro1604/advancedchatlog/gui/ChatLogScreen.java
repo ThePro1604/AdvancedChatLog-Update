@@ -7,6 +7,7 @@
  */
 package io.github.thepro1604.advancedchatlog.gui;
 
+import com.mojang.blaze3d.platform.InputConstants;
 import fi.dy.masa.malilib.gui.GuiBase;
 import fi.dy.masa.malilib.gui.GuiScrollBar;
 import fi.dy.masa.malilib.gui.GuiTextFieldGeneric;
@@ -215,7 +216,7 @@ public class ChatLogScreen extends GuiBase {
         addButton(
                 searchType,
                 ((button, mouseButton) -> {
-                    if (mouseButton == 0) {
+                    if (mouseButton == InputConstants.MOUSE_BUTTON_LEFT) {
                         findType = findType.cycle(true);
                     } else {
                         findType = findType.cycle(false);
@@ -234,7 +235,7 @@ public class ChatLogScreen extends GuiBase {
         addButton(
                 matchMode,
                 ((button, mouseButton) -> {
-                    if (mouseButton == 0) {
+                    if (mouseButton == InputConstants.MOUSE_BUTTON_LEFT) {
                         multiSearchMode = multiSearchMode.cycle(true);
                     } else {
                         multiSearchMode = multiSearchMode.cycle(false);
@@ -264,12 +265,12 @@ public class ChatLogScreen extends GuiBase {
         if (super.mouseClicked(click, doubled)) {
             return true;
         }
-        if (click.button() == 1) {
+        if (click.button() == InputConstants.MOUSE_BUTTON_RIGHT) {
             createContextMenu((int) click.x(), (int) click.y());
             return true;
         }
         // Handle context menu clicks manually
-        if (menu != null && menuOptions != null && hoveredMenuEntry != null && click.button() == 0) {
+        if (menu != null && menuOptions != null && hoveredMenuEntry != null && click.button() == InputConstants.MOUSE_BUTTON_LEFT) {
             ContextMenu.ContextConsumer consumer = menuOptions.get(hoveredMenuEntry);
             if (consumer != null) {
                 consumer.takeAction(menu.getContextX(), menu.getContextY());
@@ -298,7 +299,7 @@ public class ChatLogScreen extends GuiBase {
         // Same pattern the settings menu's scroll list uses: a click that lands on the scrollbar
         // thumb starts a drag. GuiBase.mouseClicked already calls this hook virtually via the
         // super.mouseClicked(...) call at the top of mouseClicked(...) above.
-        if (click.button() == 0 && scrollBar.wasMouseOver()) {
+        if (click.button() == InputConstants.MOUSE_BUTTON_LEFT && scrollBar.wasMouseOver()) {
             scrollBar.setIsDragging(true);
             return true;
         }
@@ -307,7 +308,7 @@ public class ChatLogScreen extends GuiBase {
 
     @Override
     public boolean onMouseReleased(MouseButtonEvent click) {
-        if (click.button() == 0) {
+        if (click.button() == InputConstants.MOUSE_BUTTON_LEFT) {
             scrollBar.setIsDragging(false);
         }
         return super.onMouseReleased(click);

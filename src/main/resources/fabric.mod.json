@@ -33,7 +33,7 @@
     "fabric-api": "*",
     "minecraft": ">=26.3",
     "malilib": ">=0.29.0",
-    "advancedchatcore": ">=2.1"
+    "advancedchatcore": ">=2.8"
   },
   "custom": {
     "acmodule": true,
