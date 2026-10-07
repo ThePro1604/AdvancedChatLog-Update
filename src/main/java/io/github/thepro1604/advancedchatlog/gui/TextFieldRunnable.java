@@ -7,11 +7,11 @@
  */
 package io.github.thepro1604.advancedchatlog.gui;
 
+import com.mojang.blaze3d.platform.InputConstants;
 import fi.dy.masa.malilib.gui.GuiTextFieldGeneric;
 import java.util.function.Consumer;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.input.KeyEvent;
-import org.lwjgl.glfw.GLFW;
 
 public class TextFieldRunnable extends GuiTextFieldGeneric {
 
@@ -33,7 +33,7 @@ public class TextFieldRunnable extends GuiTextFieldGeneric {
         if (super.keyPressed(input)) {
             return true;
         }
-        if (input.key() == GLFW.GLFW_KEY_ENTER) {
+        if (input.key() == InputConstants.KEY_RETURN || input.key() == InputConstants.KEY_NUMPADENTER) {
             onApply.accept(this);
             return true;
         }

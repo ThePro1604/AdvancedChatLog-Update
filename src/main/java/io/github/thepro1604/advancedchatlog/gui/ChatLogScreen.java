@@ -323,7 +323,7 @@ public class ChatLogScreen extends GuiBase {
             }
             GuiBase.openGui(null);
         } else if (event instanceof ClickEvent.OpenUrl openUrl) {
-            net.minecraft.util.Util.getPlatform().openUri(openUrl.uri());
+            com.mojang.blaze3d.Blaze3D.openUri(openUrl.uri());
         } else if (event instanceof ClickEvent.SuggestCommand suggest) {
             GuiBase.openGui(null);
             mc.setScreenAndShow(new io.github.thepro1604.advancedchatcore.chat.AdvancedChatScreen(suggest.command()));
