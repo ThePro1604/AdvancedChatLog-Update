@@ -322,7 +322,6 @@ public class ChatLogScreen extends GuiBase {
             if (mc.player != null && mc.player.connection != null) {
                 mc.player.connection.sendCommand(command);
             }
-            GuiBase.openGui(null);
         } else if (event instanceof ClickEvent.OpenUrl openUrl) {
             com.mojang.blaze3d.Blaze3D.openUri(openUrl.uri());
         } else if (event instanceof ClickEvent.SuggestCommand suggest) {
